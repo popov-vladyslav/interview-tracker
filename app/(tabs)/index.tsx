@@ -1,98 +1,291 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { BoardView } from '@/components/board-view';
+import { ListView } from '@/components/list-view';
+import { StatsBar } from '@/components/stats-bar';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useCompanies } from '@/lib/companies-context';
+import { STATUSES, STATUS_COLORS } from '@/lib/types';
 
-export default function HomeScreen() {
+type ViewMode = 'list' | 'board';
+
+export default function TrackerScreen() {
+  const router = useRouter();
+  const { companies, loading, syncing, error, clearError, loadFromNotion } = useCompanies();
+
+  const [search, setSearch] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('All');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  useEffect(() => {
+    loadFromNotion();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filtered = companies.filter((c) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q || c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q);
+    const matchStatus = filterStatus === 'All' || c.status === filterStatus;
+    return matchSearch && matchStatus;
+  });
+
+  const activeCount = companies.filter((c) => c.status === 'Active').length;
+  const subtitle =
+    companies.length === 0
+      ? 'No companies tracked'
+      : `${companies.length} ${companies.length === 1 ? 'company' : 'companies'} tracked${activeCount > 0 ? ` · ${activeCount} active` : ''}`;
+
+  function handleAdd() {
+    if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/company/add');
+  }
+
+  function handleRefresh() {
+    if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
+    loadFromNotion();
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={{ flex: 1 }}>
+      <Stack.Screen options={{ headerShown: false }} />
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+          <ActivityIndicator size="large" />
+          <Text style={{ fontSize: 14, color: '#888' }}>Loading from Notion…</Text>
+        </View>
+      ) : (
+        <ScrollView
+          contentInsetAdjustmentBehavior="automatic"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 48 }}
+          keyboardDismissMode="on-drag"
+        >
+          {/* ── Page header ── */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingTop: 56,
+              paddingBottom: 4,
+              gap: 12,
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>
+                Interview Tracker
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                <Text style={{ fontSize: 14, color: '#888' }}>{subtitle}</Text>
+                {syncing && <ActivityIndicator size="small" />}
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 4 }}>
+              <Pressable
+                onPress={handleRefresh}
+                hitSlop={8}
+                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+              >
+                <IconSymbol name="arrow.clockwise" size={20} color="#888" />
+              </Pressable>
+
+              <Pressable
+                onPress={handleAdd}
+                style={({ pressed }) => ({
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderRadius: 24,
+                  borderCurve: 'continuous',
+                  backgroundColor: pressed ? '#333' : '#111',
+                })}
+              >
+                <IconSymbol name="plus" size={14} color="#fff" weight="semibold" />
+                <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>
+                  Add Company
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+
+          {/* ── Error banner ── */}
+          {error && (
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginHorizontal: 20,
+                marginTop: 12,
+                padding: 12,
+                backgroundColor: '#FFEBEE',
+                borderRadius: 10,
+                borderCurve: 'continuous',
+              }}
+            >
+              <Text style={{ fontSize: 13, color: '#C62828', flex: 1 }}>{error}</Text>
+              <Pressable onPress={clearError} hitSlop={8}>
+                <IconSymbol name="xmark" size={14} color="#C62828" />
+              </Pressable>
+            </View>
+          )}
+
+          {/* ── Stats grid ── */}
+          <View style={{ paddingTop: 20 }}>
+            <StatsBar companies={companies} />
+          </View>
+
+          {/* ── Search ── */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginHorizontal: 20,
+              marginTop: 16,
+              backgroundColor: 'rgba(0,0,0,0.05)',
+              borderRadius: 12,
+              borderCurve: 'continuous',
+              paddingHorizontal: 12,
+              paddingVertical: 9,
+            }}
+          >
+            <IconSymbol name="magnifyingglass" size={16} color="#999" />
+            <TextInput
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search companies or roles…"
+              placeholderTextColor="#aaa"
+              style={{ flex: 1, fontSize: 14 }}
+              clearButtonMode="while-editing"
+            />
+          </View>
+
+          {/* ── Filter chips + view toggle ── */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+              marginTop: 10,
+              paddingLeft: 20,
+            }}
+          >
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ gap: 6 }}
+              style={{ flex: 1 }}
+            >
+              {['All', ...STATUSES].map((s) => {
+                const active = filterStatus === s;
+                const dot =
+                  s !== 'All'
+                    ? STATUS_COLORS[s as keyof typeof STATUS_COLORS]?.dot
+                    : undefined;
+                return (
+                  <Pressable
+                    key={s}
+                    onPress={() => {
+                      if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
+                      setFilterStatus(s);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      paddingHorizontal: 13,
+                      paddingVertical: 7,
+                      borderRadius: 20,
+                      borderWidth: 1.5,
+                      borderColor: active ? '#222' : '#e0e0e0',
+                      backgroundColor: active ? '#222' : 'transparent',
+                    }}
+                  >
+                    {dot && (
+                      <View
+                        style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }}
+                      />
+                    )}
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: active ? '600' : '400',
+                        color: active ? '#fff' : '#555',
+                      }}
+                    >
+                      {s}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {/* Board / List toggle */}
+            <View
+              style={{
+                flexDirection: 'row',
+                backgroundColor: 'rgba(0,0,0,0.05)',
+                borderRadius: 9,
+                padding: 2,
+                marginRight: 20,
+              }}
+            >
+              {(['list', 'board'] as ViewMode[]).map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => {
+                    if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
+                    setViewMode(m);
+                  }}
+                  style={{
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    borderRadius: 7,
+                    backgroundColor: viewMode === m ? '#fff' : 'transparent',
+                    boxShadow: viewMode === m ? '0 1px 3px rgba(0,0,0,0.1)' : undefined,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: viewMode === m ? '#222' : '#888',
+                    }}
+                  >
+                    {m === 'list' ? 'List' : 'Board'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+
+          {/* ── Content ── */}
+          <View style={{ marginTop: 16 }}>
+            {viewMode === 'list' ? (
+              <ListView companies={filtered} />
+            ) : (
+              <BoardView companies={filtered} />
+            )}
+          </View>
+        </ScrollView>
+      )}
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});

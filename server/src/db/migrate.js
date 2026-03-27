@@ -1,0 +1,102 @@
+// Migration = creating or updating database tables.
+// Run this once to set up your database structure.
+// Usage: cd server && node src/db/migrate.js
+
+require("dotenv").config();
+const { getDb } = require("./connection");
+
+async function migrate() {
+  const sql = getDb();
+
+  console.log("🔄 Running migrations...\n");
+
+  // ── TABLE 1: companies ──
+  // This is the main table. Each row = one company in your pipeline.
+  await sql`
+    CREATE TABLE IF NOT EXISTS companies (
+      id              SERIAL PRIMARY KEY,
+      name            TEXT NOT NULL,
+      role            TEXT DEFAULT '',
+      status          TEXT DEFAULT 'Active'
+                      CHECK (status IN ('Active','Paused','Rejected','Offer','Withdrawn','Accepted')),
+      stage           TEXT DEFAULT 'HR Screen'
+                      CHECK (stage IN ('HR Screen','Technical','System Design','Client Call','Final Round','Offer')),
+      priority        TEXT DEFAULT 'Medium'
+                      CHECK (priority IN ('High','Medium','Low')),
+      work_mode       TEXT DEFAULT 'Remote'
+                      CHECK (work_mode IN ('Remote','Hybrid','On-site')),
+      location        TEXT DEFAULT '',
+      salary          TEXT DEFAULT '',
+      source          TEXT DEFAULT 'Other'
+                      CHECK (source IN ('LinkedIn','Referral','Job Board','Direct','Recruiter','Other')),
+      tags            TEXT[] DEFAULT '{}',
+      overall_rating  INTEGER DEFAULT 0 CHECK (overall_rating BETWEEN 0 AND 5),
+      applied_date    DATE,
+      next_interview  TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("✅ companies table created");
+
+  // ── TABLE 2: stages ──
+  // Each interview stage for a company (HR screen, technical, etc.)
+  // company_id links back to companies table (foreign key)
+  // ON DELETE CASCADE = if you delete a company, its stages are auto-deleted
+  await sql`
+    CREATE TABLE IF NOT EXISTS stages (
+      id              SERIAL PRIMARY KEY,
+      company_id      INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      name            TEXT NOT NULL,
+      status          TEXT DEFAULT 'pending'
+                      CHECK (status IN ('pending','completed','cancelled')),
+      scheduled_date  TIMESTAMPTZ,
+      duration        INTEGER,
+      interviewer     TEXT DEFAULT '',
+      feedback        TEXT DEFAULT '',
+      my_notes        TEXT DEFAULT '',
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("✅ stages table created");
+
+  // ── TABLE 3: contacts ──
+  // People you're talking to at each company (recruiters, tech leads, etc.)
+  await sql`
+    CREATE TABLE IF NOT EXISTS contacts (
+      id              SERIAL PRIMARY KEY,
+      company_id      INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      name            TEXT NOT NULL,
+      role            TEXT DEFAULT '',
+      email           TEXT DEFAULT '',
+      phone           TEXT DEFAULT '',
+      notes           TEXT DEFAULT '',
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("✅ contacts table created");
+
+  // ── TABLE 4: notes ──
+  // Feedback, transcriptions, general notes per company
+  // stage_id is optional — a note can be linked to a specific stage or not
+  await sql`
+    CREATE TABLE IF NOT EXISTS notes (
+      id              SERIAL PRIMARY KEY,
+      company_id      INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+      stage_id        INTEGER REFERENCES stages(id) ON DELETE SET NULL,
+      title           TEXT NOT NULL,
+      content         TEXT DEFAULT '',
+      type            TEXT DEFAULT 'general'
+                      CHECK (type IN ('general','feedback','transcription','prep')),
+      created_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("✅ notes table created");
+
+  console.log("\n🎉 All tables created successfully!");
+}
+
+migrate().catch((err) => {
+  console.error("❌ Migration failed:", err.message);
+  process.exit(1);
+});
