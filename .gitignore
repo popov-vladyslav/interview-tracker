@@ -47,3 +47,4 @@ app-example
 .agents/
 .claude/
 skills-lock.json
+server/.env

@@ -11,7 +11,6 @@ async function migrate() {
   console.log("🔄 Running migrations...\n");
 
   // ── TABLE 1: companies ──
-  // This is the main table. Each row = one company in your pipeline.
   await sql`
     CREATE TABLE IF NOT EXISTS companies (
       id              SERIAL PRIMARY KEY,
@@ -40,9 +39,6 @@ async function migrate() {
   console.log("✅ companies table created");
 
   // ── TABLE 2: stages ──
-  // Each interview stage for a company (HR screen, technical, etc.)
-  // company_id links back to companies table (foreign key)
-  // ON DELETE CASCADE = if you delete a company, its stages are auto-deleted
   await sql`
     CREATE TABLE IF NOT EXISTS stages (
       id              SERIAL PRIMARY KEY,
@@ -61,7 +57,6 @@ async function migrate() {
   console.log("✅ stages table created");
 
   // ── TABLE 3: contacts ──
-  // People you're talking to at each company (recruiters, tech leads, etc.)
   await sql`
     CREATE TABLE IF NOT EXISTS contacts (
       id              SERIAL PRIMARY KEY,
@@ -77,8 +72,6 @@ async function migrate() {
   console.log("✅ contacts table created");
 
   // ── TABLE 4: notes ──
-  // Feedback, transcriptions, general notes per company
-  // stage_id is optional — a note can be linked to a specific stage or not
   await sql`
     CREATE TABLE IF NOT EXISTS notes (
       id              SERIAL PRIMARY KEY,
