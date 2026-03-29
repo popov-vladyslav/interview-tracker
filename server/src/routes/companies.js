@@ -21,24 +21,36 @@ router.get("/", async (req, res) => {
     const sql = getDb();
 
     const companies = await sql`
-      SELECT * FROM companies ORDER BY updated_at DESC
+      SELECT * FROM companies WHERE user_id = ${req.userId} ORDER BY updated_at DESC
     `;
 
-    // For each company, also fetch its stages
-    const result = await Promise.all(
-      companies.map(async (company) => {
-        const stages = await sql`
-          SELECT * FROM stages 
-          WHERE company_id = ${company.id} 
+    const companyIds = companies.map((c) => c.id);
+    const stages = companyIds.length
+      ? await sql`
+          SELECT * FROM stages
+          WHERE company_id = ANY(${companyIds})
           ORDER BY id ASC
-        `;
-        return { ...company, stages };
-      }),
-    );
+        `
+      : [];
+
+    // Group stages by company_id
+    const stagesByCompany = {};
+    for (const stage of stages) {
+      if (!stagesByCompany[stage.company_id]) {
+        stagesByCompany[stage.company_id] = [];
+      }
+      stagesByCompany[stage.company_id].push(stage);
+    }
+
+    const result = companies.map((company) => ({
+      ...company,
+      stages: stagesByCompany[company.id] || [],
+    }));
 
     res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -52,7 +64,7 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
 
     const [company] = await sql`
-      SELECT * FROM companies WHERE id = ${id}
+      SELECT * FROM companies WHERE id = ${id} AND user_id = ${req.userId}
     `;
 
     if (!company) {
@@ -71,7 +83,8 @@ router.get("/:id", async (req, res) => {
 
     res.json({ ...company, stages, contacts, notes });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -102,29 +115,19 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Company name is required" });
     }
 
-    // Insert the company
     const [company] = await sql`
       INSERT INTO companies (
         name, role, status, stage, priority, work_mode,
-        location, salary, source, tags, applied_date, next_interview
+        location, salary, source, tags, applied_date, next_interview, user_id
       ) VALUES (
-        ${name},
-        ${role || ""},
-        ${status || "Active"},
-        ${stage || "HR Screen"},
-        ${priority || "Medium"},
-        ${work_mode || "Remote"},
-        ${location || ""},
-        ${salary || ""},
-        ${source || "Other"},
-        ${tags || []},
-        ${applied_date || null},
-        ${next_interview || null}
+        ${name}, ${role || ""}, ${status || "Active"}, ${stage || "HR Screen"},
+        ${priority || "Medium"}, ${work_mode || "Remote"}, ${location || ""},
+        ${salary || ""}, ${source || "Other"}, ${tags || []},
+        ${applied_date || null}, ${next_interview || null}, ${req.userId}
       )
       RETURNING *
-    `;
+`;
 
-    // Auto-create the 6 default interview stages
     const stages = [];
     for (const stageName of DEFAULT_STAGES) {
       const [s] = await sql`
@@ -137,7 +140,8 @@ router.post("/", async (req, res) => {
 
     res.status(201).json({ ...company, stages });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -181,7 +185,7 @@ router.put("/:id", async (req, res) => {
         applied_date = COALESCE(${applied_date}, applied_date),
         next_interview = COALESCE(${next_interview}, next_interview),
         updated_at = NOW()
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${req.userId}
       RETURNING *
     `;
 
@@ -191,7 +195,8 @@ router.put("/:id", async (req, res) => {
 
     res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -205,7 +210,7 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
 
     const [deleted] = await sql`
-      DELETE FROM companies WHERE id = ${id} RETURNING id
+      DELETE FROM companies WHERE id = ${id} AND user_id = ${req.userId} RETURNING id
     `;
 
     if (!deleted) {
@@ -214,7 +219,8 @@ router.delete("/:id", async (req, res) => {
 
     res.json({ message: "Company deleted", id: deleted.id });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

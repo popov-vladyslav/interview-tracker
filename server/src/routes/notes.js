@@ -10,14 +10,16 @@ router.get("/:companyId/notes", async (req, res) => {
     const { companyId } = req.params;
 
     const notes = await sql`
-      SELECT * FROM notes
-      WHERE company_id = ${companyId}
-      ORDER BY created_at DESC
+      SELECT n.* FROM notes n
+      JOIN companies c ON n.company_id = c.id
+      WHERE n.company_id = ${companyId} AND c.user_id = ${req.userId}
+      ORDER BY n.created_at DESC
     `;
 
     res.json(notes);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -27,6 +29,13 @@ router.post("/:companyId/notes", async (req, res) => {
     const sql = getDb();
     const { companyId } = req.params;
     const { title, content, type, stage_id } = req.body;
+
+    const [company] = await sql`
+      SELECT id FROM companies WHERE id = ${companyId} AND user_id = ${req.userId}
+    `;
+    if (!company) {
+      return res.status(404).json({ error: "Company not found" });
+    }
 
     const [note] = await sql`
       INSERT INTO notes (company_id, stage_id, title, content, type)
@@ -42,7 +51,8 @@ router.post("/:companyId/notes", async (req, res) => {
 
     res.status(201).json(note);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -53,7 +63,12 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
 
     const [deleted] = await sql`
-      DELETE FROM notes WHERE id = ${id} RETURNING id
+      DELETE FROM notes
+      USING companies
+      WHERE notes.id = ${id}
+        AND notes.company_id = companies.id
+        AND companies.user_id = ${req.userId}
+      RETURNING notes.id
     `;
 
     if (!deleted) {
@@ -62,7 +77,8 @@ router.delete("/:id", async (req, res) => {
 
     res.json({ message: "Note deleted" });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
