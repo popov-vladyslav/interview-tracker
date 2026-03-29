@@ -10,8 +10,6 @@ async function reset() {
 
   console.log("⚠️  Dropping all tables...\n");
 
-  // Drop in reverse order (children first, then parents)
-  // because of foreign key constraints
   await sql`DROP TABLE IF EXISTS notes`;
   console.log("🗑️  notes dropped");
 

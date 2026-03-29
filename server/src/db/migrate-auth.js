@@ -19,8 +19,6 @@ async function migrateAuth() {
   console.log("✅ users table created");
 
   // ── Add user_id to companies ──
-  // This links each company to a specific user
-  // We use IF NOT EXISTS approach with a try/catch
   try {
     await sql`ALTER TABLE companies ADD COLUMN user_id INTEGER REFERENCES users(id)`;
     console.log("✅ user_id added to companies");
