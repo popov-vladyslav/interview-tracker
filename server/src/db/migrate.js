@@ -16,20 +16,15 @@ async function migrate() {
       id              SERIAL PRIMARY KEY,
       name            TEXT NOT NULL,
       role            TEXT DEFAULT '',
-      status          TEXT DEFAULT 'Active'
+      status          TEXT DEFAULT 'Wishlist'
                       CHECK (status IN ('Wishlist','Active','Offer','Rejected')),
-      stage           TEXT DEFAULT 'HR Review',
-      priority        TEXT DEFAULT 'Medium'
-                      CHECK (priority IN ('High','Medium','Low')),
+      stage           TEXT DEFAULT 'CV Review',
       work_mode       TEXT DEFAULT 'Remote'
                       CHECK (work_mode IN ('Remote','Hybrid','On-site')),
       location        TEXT DEFAULT '',
       salary          TEXT DEFAULT '',
       source          TEXT DEFAULT 'Other'
                       CHECK (source IN ('LinkedIn','Referral','Job Board','Direct','Recruiter','Other')),
-      tags            TEXT[] DEFAULT '{}',
-      overall_rating  INTEGER DEFAULT 0 CHECK (overall_rating BETWEEN 0 AND 5),
-      applied_date    DATE,
       next_interview  TIMESTAMPTZ,
       created_at      TIMESTAMPTZ DEFAULT NOW(),
       updated_at      TIMESTAMPTZ DEFAULT NOW()
