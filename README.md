@@ -1,50 +1,123 @@
-# Welcome to your Expo app 👋
+# Interview Tracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A cross-platform app to track job interviews, stages, contacts, and notes. Built with Expo (React Native) for mobile and web, with a Node.js/Express backend and Neon Postgres database.
 
-## Get started
+## Features
 
-1. Install dependencies
+- **Dashboard** with search, status filtering, and stage grouping
+- **Web Kanban board** with drag-and-drop between status columns (Wishlist, Active, Offer, Rejected)
+- **Interview stages** per company (HR Review, Technical, Client + custom stages)
+- **Contacts & notes** management per company
+- **Authentication** with JWT (email/password)
+- **Account deletion** with full data cascade
+- Pull-to-refresh, skeleton loaders, Snackbar error feedback
+- Haptic feedback on iOS, smooth animations via Reanimated
 
-   ```bash
-   npm install
-   ```
+## Tech Stack
 
-2. Start the app
+| Layer | Technology |
+|-------|-----------|
+| Mobile & Web | Expo 54, React Native 0.81, React 19 |
+| Routing | Expo Router 6 (file-based) |
+| UI | React Native Paper 5.15 (Material Design 3) |
+| State | Zustand 5 |
+| Animations | react-native-reanimated 4.x |
+| Web Kanban | Expo DOM Components + @hello-pangea/dnd |
+| Backend | Node.js, Express |
+| Database | Neon Postgres |
+| Auth | JWT (bcrypt + expo-secure-store) |
 
-   ```bash
-   npx expo start
-   ```
+## Getting Started
 
-In the output, you'll find options to open the app in a
+### Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 18+
+- A Neon Postgres database (or any PostgreSQL instance)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### Backend Setup
 
 ```bash
-npm run reset-project
+cd server
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Create `server/.env`:
 
-## Learn more
+```
+DATABASE_URL=postgres://user:pass@host/dbname?sslmode=require
+JWT_SECRET=your-secret-key
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Run the database migration:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+node src/db/migrate.js
+```
 
-## Join the community
+If upgrading from an older version, run the v2 migration:
 
-Join our community of developers creating universal apps.
+```bash
+node src/db/migrate-v2.js
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Start the server:
+
+```bash
+npm run dev
+```
+
+### Frontend Setup
+
+```bash
+npm install
+```
+
+Start the Expo dev server:
+
+```bash
+npx expo start
+```
+
+- Press `w` for web
+- Press `i` for iOS simulator
+- Press `a` for Android emulator
+
+## Project Structure
+
+```
+app/                    # Expo Router screens
+  (auth)/               # Login, Register
+  (tabs)/               # Dashboard, Settings
+  company/              # Detail, Add, Edit
+components/             # Shared components (Kanban board)
+features/
+  auth/                 # Auth store
+  common/               # Shared UI (EmptyState, DatePicker)
+  companies/            # Companies store, CompanyCard, CompanyForm, StatsBar, etc.
+services/               # API clients, types
+theme/                  # Colors, spacing, Paper theme
+utils/                  # Haptics helpers
+server/
+  src/
+    db/                 # Connection, migrations
+    routes/             # Express routes (auth, companies, stages, contacts, notes)
+    middleware/         # JWT auth middleware
+ai/                     # AI-generated specs (PRD, tasks, UI, tests)
+```
+
+## Data Model
+
+### Statuses
+
+`Wishlist` | `Active` | `Offer` | `Rejected`
+
+### Default Stages (per company)
+
+`HR Review` | `Technical` | `Client` (custom stages can be added)
+
+### Database Tables
+
+- **companies** — name, role, status, stage, work_mode, location, salary, source, tags, rating, dates
+- **stages** — per-company interview stages with status, date, interviewer, feedback, notes
+- **contacts** — per-company recruiter/interviewer contacts
+- **notes** — per-company notes (general, feedback, transcription, prep)

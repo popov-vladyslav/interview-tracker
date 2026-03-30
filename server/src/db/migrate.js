@@ -10,7 +10,19 @@ async function migrate() {
 
   console.log("🔄 Running migrations...\n");
 
-  // ── TABLE 1: companies ──
+  // ── TABLE: users ──
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id          SERIAL PRIMARY KEY,
+      email       TEXT UNIQUE NOT NULL,
+      password    TEXT NOT NULL,
+      name        TEXT DEFAULT '',
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  console.log("✅ users table created");
+
+  // ── TABLE: companies ──
   await sql`
     CREATE TABLE IF NOT EXISTS companies (
       id              SERIAL PRIMARY KEY,
@@ -26,6 +38,7 @@ async function migrate() {
       source          TEXT DEFAULT 'Other'
                       CHECK (source IN ('LinkedIn','Referral','Job Board','Direct','Recruiter','Other')),
       next_interview  TIMESTAMPTZ,
+      user_id         INTEGER NOT NULL REFERENCES users(id),
       created_at      TIMESTAMPTZ DEFAULT NOW(),
       updated_at      TIMESTAMPTZ DEFAULT NOW()
     )

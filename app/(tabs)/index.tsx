@@ -1,291 +1,392 @@
-import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { Stack } from 'expo-router';
-import { useEffect, useState } from 'react';
+import KanbanBoard from "@/components/kanban-board";
+import { EmptyState } from "@/features/common/components/empty-state";
+import { CompanyCard } from "@/features/companies/components/company-card";
+import { DashboardToolbar } from "@/features/companies/components/dashboard-toolbar";
+import { StatsBar } from "@/features/companies/components/stats-bar";
+import { useCompaniesStore } from "@/features/companies/store";
+import type { Company } from "@/services/types";
+import { STATUSES } from "@/services/types";
+import { spacing, STATUS_COLORS } from "@/theme";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  useWindowDimensions,
   View,
-} from 'react-native';
+} from "react-native";
+import { FAB, Searchbar, Snackbar, useTheme } from "react-native-paper";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 
-import { BoardView } from '@/components/board-view';
-import { ListView } from '@/components/list-view';
-import { StatsBar } from '@/components/stats-bar';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { useCompanies } from '@/lib/companies-context';
-import { STATUSES, STATUS_COLORS } from '@/lib/types';
+const isWeb = process.env.EXPO_OS === "web";
+const KANBAN_MIN_WIDTH = 768;
 
-type ViewMode = 'list' | 'board';
+// ── Skeleton Card ──
 
-export default function TrackerScreen() {
-  const router = useRouter();
-  const { companies, loading, syncing, error, clearError, loadFromNotion } = useCompanies();
-
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('All');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+function SkeletonCard() {
+  const theme = useTheme();
+  const opacity = useSharedValue(0.3);
 
   useEffect(() => {
-    loadFromNotion();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    opacity.value = withRepeat(withTiming(1, { duration: 800 }), -1, true);
+  }, [opacity]);
 
-  const filtered = companies.filter((c) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q || c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q);
-    const matchStatus = filterStatus === 'All' || c.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
-
-  const activeCount = companies.filter((c) => c.status === 'Active').length;
-  const subtitle =
-    companies.length === 0
-      ? 'No companies tracked'
-      : `${companies.length} ${companies.length === 1 ? 'company' : 'companies'} tracked${activeCount > 0 ? ` · ${activeCount} active` : ''}`;
-
-  function handleAdd() {
-    if (process.env.EXPO_OS === 'ios') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/company/add');
-  }
-
-  function handleRefresh() {
-    if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
-    loadFromNotion();
-  }
+  const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
-    <View style={{ flex: 1 }}>
-      <Stack.Screen options={{ headerShown: false }} />
-
-      {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <ActivityIndicator size="large" />
-          <Text style={{ fontSize: 14, color: '#888' }}>Loading from Notion…</Text>
+    <View
+      style={[skeletonStyles.card, { backgroundColor: theme.colors.surface }]}
+    >
+      <Animated.View style={animStyle}>
+        <View
+          style={[
+            skeletonStyles.line,
+            skeletonStyles.titleLine,
+            { backgroundColor: theme.colors.surfaceVariant },
+          ]}
+        />
+        <View
+          style={[
+            skeletonStyles.line,
+            skeletonStyles.subtitleLine,
+            { backgroundColor: theme.colors.surfaceVariant },
+          ]}
+        />
+        <View style={skeletonStyles.chipRow}>
+          <View
+            style={[
+              skeletonStyles.chip,
+              { backgroundColor: theme.colors.surfaceVariant },
+            ]}
+          />
+          <View
+            style={[
+              skeletonStyles.chip,
+              { backgroundColor: theme.colors.surfaceVariant },
+            ]}
+          />
         </View>
-      ) : (
-        <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 48 }}
-          keyboardDismissMode="on-drag"
-        >
-          {/* ── Page header ── */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              justifyContent: 'space-between',
-              paddingHorizontal: 20,
-              paddingTop: 56,
-              paddingBottom: 4,
-              gap: 12,
-            }}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: -0.5 }}>
-                Interview Tracker
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                <Text style={{ fontSize: 14, color: '#888' }}>{subtitle}</Text>
-                {syncing && <ActivityIndicator size="small" />}
-              </View>
-            </View>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 4 }}>
-              <Pressable
-                onPress={handleRefresh}
-                hitSlop={8}
-                style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-              >
-                <IconSymbol name="arrow.clockwise" size={20} color="#888" />
-              </Pressable>
-
-              <Pressable
-                onPress={handleAdd}
-                style={({ pressed }) => ({
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                  paddingHorizontal: 16,
-                  paddingVertical: 10,
-                  borderRadius: 24,
-                  borderCurve: 'continuous',
-                  backgroundColor: pressed ? '#333' : '#111',
-                })}
-              >
-                <IconSymbol name="plus" size={14} color="#fff" weight="semibold" />
-                <Text style={{ fontSize: 14, fontWeight: '700', color: '#fff' }}>
-                  Add Company
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* ── Error banner ── */}
-          {error && (
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginHorizontal: 20,
-                marginTop: 12,
-                padding: 12,
-                backgroundColor: '#FFEBEE',
-                borderRadius: 10,
-                borderCurve: 'continuous',
-              }}
-            >
-              <Text style={{ fontSize: 13, color: '#C62828', flex: 1 }}>{error}</Text>
-              <Pressable onPress={clearError} hitSlop={8}>
-                <IconSymbol name="xmark" size={14} color="#C62828" />
-              </Pressable>
-            </View>
-          )}
-
-          {/* ── Stats grid ── */}
-          <View style={{ paddingTop: 20 }}>
-            <StatsBar companies={companies} />
-          </View>
-
-          {/* ── Search ── */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              marginHorizontal: 20,
-              marginTop: 16,
-              backgroundColor: 'rgba(0,0,0,0.05)',
-              borderRadius: 12,
-              borderCurve: 'continuous',
-              paddingHorizontal: 12,
-              paddingVertical: 9,
-            }}
-          >
-            <IconSymbol name="magnifyingglass" size={16} color="#999" />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search companies or roles…"
-              placeholderTextColor="#aaa"
-              style={{ flex: 1, fontSize: 14 }}
-              clearButtonMode="while-editing"
-            />
-          </View>
-
-          {/* ── Filter chips + view toggle ── */}
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              marginTop: 10,
-              paddingLeft: 20,
-            }}
-          >
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 6 }}
-              style={{ flex: 1 }}
-            >
-              {['All', ...STATUSES].map((s) => {
-                const active = filterStatus === s;
-                const dot =
-                  s !== 'All'
-                    ? STATUS_COLORS[s as keyof typeof STATUS_COLORS]?.dot
-                    : undefined;
-                return (
-                  <Pressable
-                    key={s}
-                    onPress={() => {
-                      if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
-                      setFilterStatus(s);
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 5,
-                      paddingHorizontal: 13,
-                      paddingVertical: 7,
-                      borderRadius: 20,
-                      borderWidth: 1.5,
-                      borderColor: active ? '#222' : '#e0e0e0',
-                      backgroundColor: active ? '#222' : 'transparent',
-                    }}
-                  >
-                    {dot && (
-                      <View
-                        style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: dot }}
-                      />
-                    )}
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: active ? '600' : '400',
-                        color: active ? '#fff' : '#555',
-                      }}
-                    >
-                      {s}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            {/* Board / List toggle */}
-            <View
-              style={{
-                flexDirection: 'row',
-                backgroundColor: 'rgba(0,0,0,0.05)',
-                borderRadius: 9,
-                padding: 2,
-                marginRight: 20,
-              }}
-            >
-              {(['list', 'board'] as ViewMode[]).map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => {
-                    if (process.env.EXPO_OS === 'ios') Haptics.selectionAsync();
-                    setViewMode(m);
-                  }}
-                  style={{
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    borderRadius: 7,
-                    backgroundColor: viewMode === m ? '#fff' : 'transparent',
-                    boxShadow: viewMode === m ? '0 1px 3px rgba(0,0,0,0.1)' : undefined,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      fontWeight: '600',
-                      color: viewMode === m ? '#222' : '#888',
-                    }}
-                  >
-                    {m === 'list' ? 'List' : 'Board'}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          {/* ── Content ── */}
-          <View style={{ marginTop: 16 }}>
-            {viewMode === 'list' ? (
-              <ListView companies={filtered} />
-            ) : (
-              <BoardView companies={filtered} />
-            )}
-          </View>
-        </ScrollView>
-      )}
+        <View
+          style={[
+            skeletonStyles.line,
+            skeletonStyles.footerLine,
+            { backgroundColor: theme.colors.surfaceVariant },
+          ]}
+        />
+      </Animated.View>
     </View>
   );
 }
+
+const skeletonStyles = StyleSheet.create({
+  card: {
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: 12,
+    borderCurve: "continuous",
+    padding: spacing.md,
+    elevation: 1,
+  },
+  line: {
+    borderRadius: 4,
+    marginBottom: spacing.sm,
+  },
+  titleLine: {
+    width: "50%",
+    height: 18,
+  },
+  subtitleLine: {
+    width: "70%",
+    height: 14,
+  },
+  chipRow: {
+    flexDirection: "row",
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  chip: {
+    width: 60,
+    height: 24,
+    borderRadius: 12,
+  },
+  footerLine: {
+    width: "40%",
+    height: 12,
+  },
+});
+
+// ── Dashboard Screen ──
+
+export default function DashboardScreen() {
+  const theme = useTheme();
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const {
+    companies,
+    isLoading,
+    isRefreshing,
+    error,
+    fetchCompanies,
+    refreshCompanies,
+    updateCompanyStatus,
+    clearError,
+  } = useCompaniesStore();
+
+  const [search, setSearch] = useState("");
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
+
+  const showKanban = isWeb && width >= KANBAN_MIN_WIDTH;
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchCompanies();
+    }, []),
+  );
+
+  const filtered = useMemo(() => {
+    let result = companies;
+    if (stageFilter) {
+      result = result.filter((c) => c.stage === stageFilter);
+    }
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) || c.role.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [companies, stageFilter, search]);
+
+  const statusColumns = useMemo(() => [...STATUSES], []);
+
+  const kanbanCompanies = useMemo(
+    () =>
+      filtered.map((c) => ({
+        id: c.id,
+        name: c.name,
+        role: c.role,
+        status: c.status,
+        stage: c.stage,
+        salary: c.salary,
+      })),
+    [filtered],
+  );
+
+  const handleStatusChange = useCallback(
+    (companyId: number, newStatus: string) => {
+      updateCompanyStatus(companyId, newStatus);
+    },
+    [updateCompanyStatus],
+  );
+
+  const handleCardPress = useCallback(
+    (companyId: number) => {
+      router.push(`/company/${companyId}`);
+    },
+    [router],
+  );
+
+  const handleCardEdit = useCallback(
+    (companyId: number) => {
+      router.push(`/company/${companyId}/edit`);
+    },
+    [router],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Company }) => <CompanyCard company={item} />,
+    [],
+  );
+
+  const showEmpty = !isLoading && companies.length === 0;
+  const showSkeleton = isLoading && companies.length === 0;
+  const hasFilters = !!search || !!stageFilter;
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={[styles.content, showKanban && styles.kanbanContent]}>
+        {/* Toolbar / Filters */}
+        {showKanban ? (
+          <View style={styles.webToolbar}>
+            <Searchbar
+              placeholder="Search companies or roles..."
+              value={search}
+              onChangeText={setSearch}
+              style={styles.searchbar}
+              inputStyle={styles.searchInput}
+              elevation={0}
+            />
+            <StatsBar
+              companies={companies}
+              selectedStage={stageFilter}
+              onSelect={setStageFilter}
+            />
+          </View>
+        ) : isWeb ? (
+          <View style={styles.webListContent}>
+            <View style={styles.searchRow}>
+              <Searchbar
+                placeholder="Search companies or roles..."
+                value={search}
+                onChangeText={setSearch}
+                style={styles.searchbar}
+                inputStyle={styles.searchInput}
+                elevation={0}
+              />
+            </View>
+            <StatsBar
+              companies={companies}
+              selectedStage={stageFilter}
+              onSelect={setStageFilter}
+            />
+          </View>
+        ) : (
+          <DashboardToolbar
+            companies={companies}
+            search={search}
+            onSearchChange={setSearch}
+            selectedStage={stageFilter}
+            onStageSelect={setStageFilter}
+          />
+        )}
+
+        {/* Main Content */}
+        {showSkeleton ? (
+          <View style={styles.list}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
+        ) : showKanban ? (
+          <View style={styles.kanbanWrapper}>
+            <KanbanBoard
+              companies={kanbanCompanies}
+              statusColumns={statusColumns}
+              statusColors={STATUS_COLORS}
+              onStatusChange={handleStatusChange}
+              onCardPress={handleCardPress}
+              onCardEdit={handleCardEdit}
+            />
+          </View>
+        ) : (
+          <FlatList
+            data={filtered}
+            renderItem={renderItem}
+            keyExtractor={(item) => String(item.id)}
+            contentInsetAdjustmentBehavior="automatic"
+            contentContainerStyle={
+              filtered.length === 0 ? styles.emptyList : styles.list
+            }
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={refreshCompanies}
+              />
+            }
+            ListEmptyComponent={
+              showEmpty ? (
+                <EmptyState
+                  icon="briefcase-outline"
+                  title={hasFilters ? "No matches" : "No interviews yet"}
+                  description={
+                    hasFilters
+                      ? "Try adjusting your search or filters"
+                      : "Tap + to add your first interview"
+                  }
+                  actionLabel={!hasFilters ? "Add Interview" : undefined}
+                  onAction={
+                    !hasFilters ? () => router.push("/company/add") : undefined
+                  }
+                />
+              ) : null
+            }
+          />
+        )}
+      </View>
+
+      {showEmpty && !isWeb ? null : (
+        <FAB
+          icon="plus"
+          style={[
+            styles.fab,
+            { backgroundColor: theme.colors.primary },
+            isWeb && styles.fabWeb,
+          ]}
+          color={theme.colors.onPrimary}
+          onPress={() => router.push("/company/add")}
+        />
+      )}
+
+      <Snackbar
+        visible={!!error}
+        onDismiss={clearError}
+        duration={4000}
+        action={{ label: "Retry", onPress: fetchCompanies }}
+      >
+        {error}
+      </Snackbar>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    paddingTop: spacing.md,
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+  },
+  kanbanContent: {
+    width: "100%",
+  },
+  webListContent: {
+    maxWidth: 960,
+    alignSelf: "center",
+    width: "100%",
+  },
+  webToolbar: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+  },
+  searchRow: {
+    paddingHorizontal: spacing.md,
+  },
+  searchbar: {
+    borderRadius: 12,
+    maxWidth: 400,
+  },
+  searchInput: {
+    fontSize: 14,
+  },
+  kanbanWrapper: {
+    flex: 1,
+    marginTop: spacing.sm,
+  },
+  list: {
+    paddingTop: spacing.sm,
+    paddingBottom: 100,
+  },
+  emptyList: {
+    flex: 1,
+  },
+  fab: {
+    position: "absolute",
+    right: spacing.md,
+    bottom: spacing.md,
+    borderRadius: 16,
+  },
+  fabWeb: {
+    right: spacing.xl,
+    bottom: spacing.xl,
+  },
+});
