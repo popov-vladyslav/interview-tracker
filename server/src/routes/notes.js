@@ -3,8 +3,8 @@ const { getDb } = require("../db/connection");
 
 const router = Router();
 
-// GET /api/companies/:companyId/notes
-router.get("/:companyId/notes", async (req, res) => {
+// GET /api/notes/:companyId
+router.get("/:companyId", async (req, res) => {
   try {
     const sql = getDb();
     const { companyId } = req.params;
@@ -23,8 +23,8 @@ router.get("/:companyId/notes", async (req, res) => {
   }
 });
 
-// POST /api/companies/:companyId/notes — add a note
-router.post("/:companyId/notes", async (req, res) => {
+// POST /api/notes/:companyId — add a note
+router.post("/:companyId", async (req, res) => {
   try {
     const sql = getDb();
     const { companyId } = req.params;

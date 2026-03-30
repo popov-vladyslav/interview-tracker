@@ -3,8 +3,8 @@ const { getDb } = require("../db/connection");
 
 const router = Router();
 
-// POST /api/companies/:companyId/contacts — add a contact
-router.post("/:companyId/contacts", async (req, res) => {
+// POST /api/contacts/:companyId — add a contact
+router.post("/:companyId", async (req, res) => {
   try {
     const sql = getDb();
     const { companyId } = req.params;

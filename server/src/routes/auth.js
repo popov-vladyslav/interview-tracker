@@ -120,10 +120,10 @@ router.delete("/me", authenticate, async (req, res) => {
   try {
     const sql = getDb();
 
-    await sql.begin(async (tx) => {
-      await tx`DELETE FROM companies WHERE user_id = ${req.userId}`;
-      await tx`DELETE FROM users WHERE id = ${req.userId}`;
-    });
+    await sql.transaction([
+      sql`DELETE FROM companies WHERE user_id = ${req.userId}`,
+      sql`DELETE FROM users WHERE id = ${req.userId}`,
+    ]);
 
     res.json({ message: "Account deleted" });
   } catch (error) {
