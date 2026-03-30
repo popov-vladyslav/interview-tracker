@@ -26,9 +26,8 @@ async function reset() {
   console.log("🗑️  users dropped");
 
   console.log("\n✅ All tables dropped. Database is empty.\n");
-  console.log("Now run migrations to recreate:");
+  console.log("Now run migration to recreate:");
   console.log("  node src/db/migrate.js");
-  console.log("  node src/db/migrate-auth.js");
 }
 
 reset().catch((err) => {

@@ -48,3 +48,5 @@ app-example
 .claude/
 skills-lock.json
 server/.env
+
+ai/

@@ -123,15 +123,13 @@ router.post("/", async (req, res) => {
       RETURNING *
 `;
 
-    const stages = [];
-    for (const stageName of DEFAULT_STAGES) {
-      const [s] = await sql`
-        INSERT INTO stages (company_id, name)
-        VALUES (${company.id}, ${stageName})
-        RETURNING *
-      `;
-      stages.push(s);
-    }
+    const stageResults = await sql.transaction(
+      DEFAULT_STAGES.map(
+        (stageName) =>
+          sql`INSERT INTO stages (company_id, name) VALUES (${company.id}, ${stageName}) RETURNING *`,
+      ),
+    );
+    const stages = stageResults.map((rows) => rows[0]);
 
     res.status(201).json({ ...company, stages });
   } catch (error) {
