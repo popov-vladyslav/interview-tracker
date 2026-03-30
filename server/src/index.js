@@ -38,8 +38,8 @@ app.use("/api/auth", authRouter);
 
 app.use("/api/companies", authenticate, companiesRouter);
 app.use("/api/stages", authenticate, stagesRouter);
-app.use("/api/companies", authenticate, contactsRouter);
-app.use("/api/companies", authenticate, notesRouter);
+app.use("/api/contacts", authenticate, contactsRouter);
+app.use("/api/notes", authenticate, notesRouter);
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

@@ -112,59 +112,52 @@ router.delete("/:id", async (req, res) => {
     const sql = getDb();
     const { id } = req.params;
 
-    const result = await sql.begin(async (tx) => {
-      // Find the stage and verify ownership
-      const [stage] = await tx`
-        SELECT stages.id, stages.name, stages.company_id
-        FROM stages
-        JOIN companies ON stages.company_id = companies.id
-        WHERE stages.id = ${id} AND companies.user_id = ${req.userId}
-      `;
+    // Find the stage and verify ownership
+    const [stage] = await sql`
+      SELECT stages.id, stages.name, stages.company_id
+      FROM stages
+      JOIN companies ON stages.company_id = companies.id
+      WHERE stages.id = ${id} AND companies.user_id = ${req.userId}
+    `;
 
-      if (!stage) {
-        return { error: "Stage not found", status: 404 };
-      }
-
-      // Must keep at least 1 stage
-      const [{ count }] = await tx`
-        SELECT COUNT(*)::int AS count FROM stages WHERE company_id = ${stage.company_id}
-      `;
-
-      if (count <= 1) {
-        return { error: "Cannot delete the last stage", status: 400 };
-      }
-
-      // Delete the stage
-      await tx`DELETE FROM stages WHERE id = ${id}`;
-
-      // If deleted stage was the company's current stage, reset to first remaining
-      const [company] = await tx`
-        SELECT stage FROM companies WHERE id = ${stage.company_id}
-      `;
-
-      if (company.stage === stage.name) {
-        const [firstRemaining] = await tx`
-          SELECT name FROM stages WHERE company_id = ${stage.company_id} ORDER BY id ASC LIMIT 1
-        `;
-        await tx`
-          UPDATE companies SET stage = ${firstRemaining.name}, updated_at = NOW()
-          WHERE id = ${stage.company_id}
-        `;
-      } else {
-        await tx`
-          UPDATE companies SET updated_at = NOW()
-          WHERE id = ${stage.company_id}
-        `;
-      }
-
-      return { message: "Stage deleted", id: stage.id };
-    });
-
-    if (result.error) {
-      return res.status(result.status).json({ error: result.error });
+    if (!stage) {
+      return res.status(404).json({ error: "Stage not found" });
     }
 
-    res.json(result);
+    // Must keep at least 1 stage
+    const [{ count }] = await sql`
+      SELECT COUNT(*)::int AS count FROM stages WHERE company_id = ${stage.company_id}
+    `;
+
+    if (count <= 1) {
+      return res.status(400).json({ error: "Cannot delete the last stage" });
+    }
+
+    // Check if we need to update company's current stage
+    const [company] = await sql`
+      SELECT stage FROM companies WHERE id = ${stage.company_id}
+    `;
+
+    if (company.stage === stage.name) {
+      // Find first remaining stage (excluding the one being deleted)
+      const [firstRemaining] = await sql`
+        SELECT name FROM stages
+        WHERE company_id = ${stage.company_id} AND id != ${id}
+        ORDER BY id ASC LIMIT 1
+      `;
+      await sql.transaction([
+        sql`DELETE FROM stages WHERE id = ${id}`,
+        sql`UPDATE companies SET stage = ${firstRemaining.name}, updated_at = NOW()
+            WHERE id = ${stage.company_id}`,
+      ]);
+    } else {
+      await sql.transaction([
+        sql`DELETE FROM stages WHERE id = ${id}`,
+        sql`UPDATE companies SET updated_at = NOW() WHERE id = ${stage.company_id}`,
+      ]);
+    }
+
+    res.json({ message: "Stage deleted", id: stage.id });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal server error" });
