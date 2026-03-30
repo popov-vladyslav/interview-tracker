@@ -113,4 +113,23 @@ router.get("/me", authenticate, async (req, res) => {
   }
 });
 
+// ────────────────────────────────────
+// DELETE /api/auth/me — delete account and all data
+// ────────────────────────────────────
+router.delete("/me", authenticate, async (req, res) => {
+  try {
+    const sql = getDb();
+
+    await sql.begin(async (tx) => {
+      await tx`DELETE FROM companies WHERE user_id = ${req.userId}`;
+      await tx`DELETE FROM users WHERE id = ${req.userId}`;
+    });
+
+    res.json({ message: "Account deleted" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 module.exports = router;

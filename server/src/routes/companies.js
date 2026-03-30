@@ -4,12 +4,9 @@ const { getDb } = require("../db/connection");
 const router = Router();
 
 const DEFAULT_STAGES = [
-  "HR Screen",
+  "HR Review",
   "Technical",
-  "System Design",
-  "Client Call",
-  "Final Round",
-  "Offer",
+  "Client",
 ];
 
 // ────────────────────────────────────
@@ -91,7 +88,7 @@ router.get("/:id", async (req, res) => {
 // ────────────────────────────────────
 // POST /api/companies — create a new company
 // Called when you hit "Add Company" and save
-// Also auto-creates 6 default stages
+// Also auto-creates default stages
 // ────────────────────────────────────
 router.post("/", async (req, res) => {
   try {
@@ -120,7 +117,7 @@ router.post("/", async (req, res) => {
         name, role, status, stage, priority, work_mode,
         location, salary, source, tags, applied_date, next_interview, user_id
       ) VALUES (
-        ${name}, ${role || ""}, ${status || "Active"}, ${stage || "HR Screen"},
+        ${name}, ${role || ""}, ${status || "Active"}, ${stage || "HR Review"},
         ${priority || "Medium"}, ${work_mode || "Remote"}, ${location || ""},
         ${salary || ""}, ${source || "Other"}, ${tags || []},
         ${applied_date || null}, ${next_interview || null}, ${req.userId}
