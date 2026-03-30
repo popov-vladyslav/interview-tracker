@@ -17,9 +17,8 @@ async function migrate() {
       name            TEXT NOT NULL,
       role            TEXT DEFAULT '',
       status          TEXT DEFAULT 'Active'
-                      CHECK (status IN ('Active','Paused','Rejected','Offer','Withdrawn','Accepted')),
-      stage           TEXT DEFAULT 'HR Screen'
-                      CHECK (stage IN ('HR Screen','Technical','System Design','Client Call','Final Round','Offer')),
+                      CHECK (status IN ('Wishlist','Active','Offer','Rejected')),
+      stage           TEXT DEFAULT 'HR Review',
       priority        TEXT DEFAULT 'Medium'
                       CHECK (priority IN ('High','Medium','Low')),
       work_mode       TEXT DEFAULT 'Remote'
