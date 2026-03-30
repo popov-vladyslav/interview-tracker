@@ -4,6 +4,7 @@ const { getDb } = require("../db/connection");
 const router = Router();
 
 const DEFAULT_STAGES = [
+  "CV Review",
   "HR Review",
   "Technical",
   "Client",
@@ -98,13 +99,10 @@ router.post("/", async (req, res) => {
       role,
       status,
       stage,
-      priority,
       work_mode,
       location,
       salary,
       source,
-      tags,
-      applied_date,
       next_interview,
     } = req.body;
 
@@ -114,13 +112,13 @@ router.post("/", async (req, res) => {
 
     const [company] = await sql`
       INSERT INTO companies (
-        name, role, status, stage, priority, work_mode,
-        location, salary, source, tags, applied_date, next_interview, user_id
+        name, role, status, stage, work_mode,
+        location, salary, source, next_interview, user_id
       ) VALUES (
-        ${name}, ${role || ""}, ${status || "Active"}, ${stage || "HR Review"},
-        ${priority || "Medium"}, ${work_mode || "Remote"}, ${location || ""},
-        ${salary || ""}, ${source || "Other"}, ${tags || []},
-        ${applied_date || null}, ${next_interview || null}, ${req.userId}
+        ${name}, ${role || ""}, ${status || "Wishlist"}, ${stage || "CV Review"},
+        ${work_mode || "Remote"}, ${location || ""},
+        ${salary || ""}, ${source || "Other"},
+        ${next_interview || null}, ${req.userId}
       )
       RETURNING *
 `;
@@ -155,14 +153,10 @@ router.put("/:id", async (req, res) => {
       role,
       status,
       stage,
-      priority,
       work_mode,
       location,
       salary,
       source,
-      tags,
-      overall_rating,
-      applied_date,
       next_interview,
     } = req.body;
 
@@ -172,14 +166,10 @@ router.put("/:id", async (req, res) => {
         role = COALESCE(${role}, role),
         status = COALESCE(${status}, status),
         stage = COALESCE(${stage}, stage),
-        priority = COALESCE(${priority}, priority),
         work_mode = COALESCE(${work_mode}, work_mode),
         location = COALESCE(${location}, location),
         salary = COALESCE(${salary}, salary),
         source = COALESCE(${source}, source),
-        tags = COALESCE(${tags}, tags),
-        overall_rating = COALESCE(${overall_rating}, overall_rating),
-        applied_date = COALESCE(${applied_date}, applied_date),
         next_interview = COALESCE(${next_interview}, next_interview),
         updated_at = NOW()
       WHERE id = ${id} AND user_id = ${req.userId}
