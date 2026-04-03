@@ -3,7 +3,7 @@
 A cross-platform app to track job interviews, stages, contacts, and notes. Built with Expo (React Native) for mobile and web, with a Node.js/Express backend and Neon Postgres database.
 
 ## Preview by Expo go or Website
-** Note: The backend is hosted on free services, so it may go down during inactivity and take some time to start up again (cold start). **
+**Note: The backend is hosted on free services, so it may go down during inactivity and take some time to start up again (cold start).**
 
 <img width="251" height="252" alt="Screenshot 2026-04-03 at 15 52 51" src="https://github.com/user-attachments/assets/ebbef3de-a663-4499-842b-c22eff39814d" />
 
