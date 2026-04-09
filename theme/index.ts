@@ -60,7 +60,9 @@ export const spacing = {
 export const STATUS_COLORS: Record<string, string> = {
   Wishlist: "#6366F1",
   Active: "#16A34A",
+  Paused: "#D97706",
   Offer: "#7C3AED",
+  "Not replied": "#6B7280",
   Rejected: "#DC2626",
 };
 
@@ -69,6 +71,15 @@ export const STAGE_STATUS_COLORS: Record<string, string> = {
   completed: "#16A34A",
   cancelled: "#DC2626",
 };
+
+export const SNACKBAR_DURATION = 4000;
+
+export const iconSizes = {
+  sm: 16,
+  md: 18,
+  header: 22,
+  empty: 64,
+} as const;
 
 export const WEB_MULTILINE_STYLE =
   process.env.EXPO_OS === "web"

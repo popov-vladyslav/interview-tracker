@@ -16,7 +16,7 @@ interface CompaniesState {
     payload: Partial<CreateCompanyPayload>,
   ) => Promise<void>;
   updateCompanyStage: (id: number, stage: string) => Promise<void>;
-  updateCompanyStatus: (id: number, status: string) => Promise<void>;
+  updateCompanyStatus: (id: number, status: Company["status"]) => Promise<void>;
   deleteCompany: (id: number) => Promise<void>;
   clearError: () => void;
 }
@@ -42,22 +42,26 @@ export const useCompaniesStore = create<CompaniesState>((set, get) => ({
   },
 
   refreshCompanies: async () => {
-    set({ isRefreshing: true });
+    set({ isRefreshing: true, error: null });
     try {
       const companies = await companiesApi.getCompanies();
       set({ companies, isRefreshing: false });
-    } catch {
-      set({ isRefreshing: false });
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "Failed to refresh companies";
+      set({ isRefreshing: false, error: message });
     }
   },
 
   createCompany: async (payload) => {
+    set({ error: null });
     const company = await companiesApi.createCompany(payload);
     set({ companies: [company, ...get().companies] });
     return company;
   },
 
   updateCompany: async (id, payload) => {
+    set({ error: null });
     const updated = await companiesApi.updateCompany(id, payload);
     set({
       companies: get().companies.map((c) =>
@@ -83,12 +87,10 @@ export const useCompaniesStore = create<CompaniesState>((set, get) => ({
   updateCompanyStatus: async (id, status) => {
     const prev = get().companies;
     set({
-      companies: prev.map((c) =>
-        c.id === id ? { ...c, status: status as Company["status"] } : c,
-      ),
+      companies: prev.map((c) => (c.id === id ? { ...c, status } : c)),
     });
     try {
-      await companiesApi.updateCompany(id, { status: status as Company["status"] });
+      await companiesApi.updateCompany(id, { status });
     } catch {
       set({ companies: prev });
     }

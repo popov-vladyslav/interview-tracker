@@ -1,4 +1,7 @@
 {
+  "eslint.options": {
+    "flags": ["--no-warn-ignored"]
+  },
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit",
     "source.organizeImports": "explicit",

@@ -7,7 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { Chip, IconButton, Searchbar, useTheme } from "react-native-paper";
 import type { Company } from "@/services/types";
-import { spacing } from "@/theme";
+import { iconSizes, spacing } from "@/theme";
 
 type Panel = "search" | "stages" | null;
 
@@ -61,7 +61,7 @@ export function DashboardToolbar({
               ? theme.colors.primary
               : theme.colors.onSurfaceVariant
           }
-          size={22}
+          size={iconSizes.header}
           onPress={() => toggle("search")}
         />
         <IconButton
@@ -77,7 +77,7 @@ export function DashboardToolbar({
               ? theme.colors.primary
               : theme.colors.onSurfaceVariant
           }
-          size={22}
+          size={iconSizes.header}
           onPress={() => toggle("stages")}
         />
       </View>

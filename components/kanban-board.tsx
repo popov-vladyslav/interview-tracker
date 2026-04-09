@@ -8,11 +8,13 @@ import {
 } from "@hello-pangea/dnd";
 import { useCallback, useMemo, useState } from "react";
 
+type CompanyStatus = "Wishlist" | "Active" | "Paused" | "Offer" | "Not replied" | "Rejected";
+
 interface KanbanCompany {
   id: number;
   name: string;
   role: string;
-  status: string;
+  status: CompanyStatus;
   stage: string;
   salary: string;
 }
@@ -21,7 +23,7 @@ interface Props {
   companies: KanbanCompany[];
   statusColumns: string[];
   statusColors: Record<string, string>;
-  onStatusChange: (companyId: number, newStatus: string) => void;
+  onStatusChange: (companyId: number, newStatus: CompanyStatus) => void;
   onCardPress: (companyId: number) => void;
   onCardEdit: (companyId: number) => void;
   dom?: import("expo/dom").DOMProps;
@@ -35,7 +37,7 @@ export default function KanbanBoard({
   onCardPress,
   onCardEdit,
 }: Props) {
-  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [, setDraggingId] = useState<string | null>(null);
 
   const columnData = useMemo(() => {
     const grouped: Record<string, KanbanCompany[]> = {};
@@ -65,7 +67,7 @@ export default function KanbanBoard({
       const destStatus = result.destination.droppableId;
       if (sourceStatus === destStatus) return;
       const companyId = Number(result.draggableId);
-      onStatusChange(companyId, destStatus);
+      onStatusChange(companyId, destStatus as CompanyStatus);
     },
     [onStatusChange],
   );

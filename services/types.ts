@@ -9,7 +9,7 @@ export interface AuthResponse {
   token: string;
 }
 
-export const STATUSES = ["Wishlist", "Active", "Offer", "Rejected"] as const;
+export const STATUSES = ["Wishlist", "Active", "Paused", "Offer", "Not replied", "Rejected"] as const;
 export type Status = (typeof STATUSES)[number];
 
 export type StageStatus = "pending" | "completed" | "cancelled";
