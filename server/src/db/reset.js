@@ -1,5 +1,5 @@
 // Drops ALL tables and recreates them empty.
-// Run: cd server && node src/db/reset.js
+// Run: cd server && bun src/db/reset.js
 // ⚠️ This deletes ALL data permanently!
 
 require("dotenv").config();

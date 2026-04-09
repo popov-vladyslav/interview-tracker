@@ -29,7 +29,7 @@ async function migrate() {
       name            TEXT NOT NULL,
       role            TEXT DEFAULT '',
       status          TEXT DEFAULT 'Wishlist'
-                      CHECK (status IN ('Wishlist','Active','Offer','Rejected')),
+                      CHECK (status IN ('Wishlist','Active','Paused','Offer','Not replied','Rejected')),
       stage           TEXT DEFAULT 'CV Review',
       work_mode       TEXT DEFAULT 'Remote'
                       CHECK (work_mode IN ('Remote','Hybrid','On-site')),

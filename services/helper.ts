@@ -9,6 +9,7 @@ const USER_KEY = "auth_user";
 const api: AxiosInstance = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   headers: { "Content-Type": "application/json" },
+  timeout: 15_000,
 });
 
 api.interceptors.request.use(async (config) => {

@@ -6,7 +6,7 @@ import { StatsBar } from "@/features/companies/components/stats-bar";
 import { useCompaniesStore } from "@/features/companies/store";
 import type { Company } from "@/services/types";
 import { STATUSES } from "@/services/types";
-import { spacing, STATUS_COLORS } from "@/theme";
+import { SNACKBAR_DURATION, spacing, STATUS_COLORS } from "@/theme";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -146,7 +146,7 @@ export default function DashboardScreen() {
   useFocusEffect(
     useCallback(() => {
       fetchCompanies();
-    }, []),
+    }, [fetchCompanies]),
   );
 
   const filtered = useMemo(() => {
@@ -180,7 +180,7 @@ export default function DashboardScreen() {
   );
 
   const handleStatusChange = useCallback(
-    (companyId: number, newStatus: string) => {
+    (companyId: number, newStatus: Company["status"]) => {
       updateCompanyStatus(companyId, newStatus);
     },
     [updateCompanyStatus],
@@ -329,7 +329,7 @@ export default function DashboardScreen() {
       <Snackbar
         visible={!!error}
         onDismiss={clearError}
-        duration={4000}
+        duration={SNACKBAR_DURATION}
         action={{ label: "Retry", onPress: fetchCompanies }}
       >
         {error}

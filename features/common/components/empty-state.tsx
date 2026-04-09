@@ -2,7 +2,7 @@ import { StyleSheet } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { Button, Text, useTheme } from "react-native-paper";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { spacing } from "@/theme";
+import { iconSizes, spacing } from "@/theme";
 
 interface Props {
   icon: string;
@@ -19,7 +19,7 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
     <Animated.View entering={FadeIn.duration(300)} style={styles.container}>
       <MaterialCommunityIcons
         name={icon as "briefcase-outline"}
-        size={64}
+        size={iconSizes.empty}
         color={theme.colors.outlineVariant}
       />
       <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onSurface }]}>

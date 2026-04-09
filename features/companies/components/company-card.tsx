@@ -4,7 +4,7 @@ import Animated, { FadeIn } from "react-native-reanimated";
 import { Card, Chip, IconButton, Text, useTheme } from "react-native-paper";
 import { useRouter } from "expo-router";
 import type { Company } from "@/services/types";
-import { STATUS_COLORS, spacing } from "@/theme";
+import { STATUS_COLORS, iconSizes, spacing } from "@/theme";
 
 const isWeb = process.env.EXPO_OS === "web";
 
@@ -41,7 +41,7 @@ export const CompanyCard = memo(function CompanyCard({ company }: Props) {
             </Text>
             <IconButton
               icon="pencil"
-              size={18}
+              size={iconSizes.md}
               style={styles.editButton}
               onPress={(e) => {
                 e.stopPropagation?.();

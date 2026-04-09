@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as authApi from "@/services/auth";
-import { getSavedUser, getToken, setForceLogoutHandler } from "@/services/helper";
+import { getSavedUser, getToken, removeToken, saveUser, setForceLogoutHandler } from "@/services/helper";
 import type { User } from "@/services/types";
 
 interface AuthState {
@@ -27,8 +27,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const token = await getToken();
       if (token) {
-        const user = await getSavedUser();
-        set({ user, isAuthenticated: true, isLoading: false });
+        try {
+          const user = await authApi.getMe();
+          await saveUser(user);
+          set({ user, isAuthenticated: true, isLoading: false });
+        } catch {
+          await removeToken();
+          set({ user: null, isAuthenticated: false, isLoading: false });
+        }
       } else {
         set({ isLoading: false });
       }
