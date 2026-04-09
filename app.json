@@ -2,7 +2,7 @@
   "expo": {
     "name": "interview-tracker",
     "slug": "interview-tracker",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "interviewtracker",
@@ -55,6 +55,12 @@
       "eas": {
         "projectId": "2e279501-c764-4d60-aa5a-2a1bdc7f3d86"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2e279501-c764-4d60-aa5a-2a1bdc7f3d86"
     }
   }
 }
