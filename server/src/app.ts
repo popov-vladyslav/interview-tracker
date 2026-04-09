@@ -27,7 +27,20 @@ function createApp(): Application {
 
   app.use(
     cors({
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        // Non-browser requests (native mobile, server-to-server) have no origin
+        if (!origin) return callback(null, true);
+
+        const isAllowed =
+          allowedOrigins.includes(origin) ||
+          /^https:\/\/([a-z0-9-]+\.)*expo\.dev$/.test(origin);
+
+        if (!isAllowed) {
+          console.warn(`[CORS] Rejected origin: ${origin}`);
+        }
+
+        callback(isAllowed ? null : new Error("Not allowed by CORS"), isAllowed);
+      },
       credentials: true,
     })
   );
