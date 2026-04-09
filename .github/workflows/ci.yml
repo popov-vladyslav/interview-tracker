@@ -42,7 +42,7 @@ jobs:
 
       - name: Run backend tests
         if: steps.check_db.outputs.skip == 'false'
-        run: bun run test
+        run: bun test
         working-directory: server
         env:
           NODE_ENV: test
