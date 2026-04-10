@@ -9,13 +9,22 @@ const USER_KEY = "auth_user";
 const api: AxiosInstance = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL,
   headers: { "Content-Type": "application/json" },
-  timeout: 15_000,
+  timeout: 60_000,
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const isAuthRoute =
+    config.url?.includes('/api/auth/login') ||
+    config.url?.includes('/api/auth/register');
+  if (!isAuthRoute) {
+    try {
+      const token = await getToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // SecureStore unavailable — proceed without token
+    }
   }
   return config;
 });
@@ -30,7 +39,9 @@ api.interceptors.response.use(
       return Promise.reject(new Error("Session expired. Please log in again."));
     }
     const message =
-      error.response?.data?.error || `Request failed: ${error.response?.status}`;
+      error.response?.data?.error ||
+      error.message ||
+      `Request failed: ${error.response?.status}`;
     return Promise.reject(new Error(message));
   },
 );
