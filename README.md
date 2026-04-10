@@ -5,7 +5,7 @@ A cross-platform app to track job interviews, stages, contacts, and notes. Built
 ## Preview by Expo go or Website
 **Note: The backend is hosted on free services, so it may go down during inactivity and take some time to start up again (cold start).**
 
-<img width="270" height="269" alt="Screenshot 2026-04-10 at 00 31 41" src="https://github.com/user-attachments/assets/18826008-dea1-49f3-bde0-4f33b6bde8cc" />
+<img width="238" height="237" alt="Screenshot 2026-04-10 at 12 01 50" src="https://github.com/user-attachments/assets/46e32620-996f-4955-af28-03f6578c04e4" />
 
 [Visit my website](https://interview-tracker-web.onrender.com) 
 
