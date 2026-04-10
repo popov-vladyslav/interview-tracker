@@ -21,6 +21,8 @@ export default function CompanyDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const d = useCompanyDetail(id);
 
+  const isWeb = process.env.EXPO_OS === "web";
+
   if (d.loading || !d.company) return <LoadingScreen />;
 
   const { company } = d;
@@ -34,7 +36,7 @@ export default function CompanyDetailScreen() {
         options={{
           title: company.name,
           headerRight: () => (
-            <View style={styles.headerActions}>
+            <View style={[styles.headerActions, !isWeb && styles.mobileHeader]}>
               <IconButton
                 style={styles.icon}
                 icon="pencil-outline"
@@ -165,6 +167,7 @@ const styles = StyleSheet.create({
   icon: {
     margin: 0,
   },
+  mobileHeader: { flex: 0 },
   headerActions: {
     flexDirection: "row",
     gap: 4,
