@@ -31,7 +31,7 @@ A cross-platform app to track job interviews, stages, contacts, and notes. Built
 | State | Zustand 5 |
 | Animations | react-native-reanimated 4.x |
 | Web Kanban | Expo DOM Components + @hello-pangea/dnd |
-| Backend | Node.js, Express |
+| Backend | Bun, Express |
 | Database | Neon Postgres |
 | Auth | JWT (bcrypt + expo-secure-store) |
 
@@ -39,14 +39,14 @@ A cross-platform app to track job interviews, stages, contacts, and notes. Built
 
 ### Prerequisites
 
-- Node.js 18+
+- [Bun](https://bun.sh) 1.0+
 - A Neon Postgres database (or any PostgreSQL instance)
 
 ### Backend Setup
 
 ```bash
 cd server
-npm install
+bun install
 ```
 
 Create `server/.env`:
@@ -59,31 +59,25 @@ JWT_SECRET=your-secret-key
 Run the database migration:
 
 ```bash
-node src/db/migrate.js
-```
-
-If upgrading from an older version, run the v2 migration:
-
-```bash
-node src/db/migrate-v2.js
+bun run migrate
 ```
 
 Start the server:
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 ### Frontend Setup
 
 ```bash
-npm install
+bun install
 ```
 
 Start the Expo dev server:
 
 ```bash
-npx expo start
+bunx expo start
 ```
 
 - Press `w` for web
