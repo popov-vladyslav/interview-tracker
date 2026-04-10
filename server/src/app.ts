@@ -17,33 +17,7 @@ type NextFunction = import("express").NextFunction;
 
 function createApp(): Application {
   const app = express();
-  const allowedOrigins: string[] = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-    : [];
-
-  if (process.env.NODE_ENV === "production" && allowedOrigins.length === 0) {
-    throw new Error("ALLOWED_ORIGINS must be set in production");
-  }
-
-  app.use(
-    cors({
-      origin: (origin, callback) => {
-        // Non-browser requests (native mobile, server-to-server) have no origin
-        if (!origin) return callback(null, true);
-
-        const isAllowed =
-          allowedOrigins.includes(origin) ||
-          /^https:\/\/([a-z0-9-]+\.)*expo\.dev$/.test(origin);
-
-        if (!isAllowed) {
-          console.warn(`[CORS] Rejected origin: ${origin}`);
-        }
-
-        callback(isAllowed ? null : new Error("Not allowed by CORS"), isAllowed);
-      },
-      credentials: true,
-    })
-  );
+  app.use(cors());
   app.use(express.json({ limit: "100kb" }));
 
   app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok" }));
