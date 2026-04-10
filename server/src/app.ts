@@ -1,14 +1,14 @@
-import express from "express";
 import cors from "cors";
-import morgan from "morgan";
+import express from "express";
 import { rateLimit } from "express-rate-limit";
+import morgan from "morgan";
 import { authenticate } from "./middleware/auth";
 import { errorHandler } from "./middleware/error-handler";
 import authRouter from "./routes/auth";
 import companiesRouter from "./routes/companies";
-import stagesRouter from "./routes/stages";
 import contactsRouter from "./routes/contacts";
 import notesRouter from "./routes/notes";
+import stagesRouter from "./routes/stages";
 
 type Application = import("express").Application;
 type Request = import("express").Request;
@@ -17,6 +17,7 @@ type NextFunction = import("express").NextFunction;
 
 function createApp(): Application {
   const app = express();
+
   const allowedOrigins: string[] = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
     : [];
@@ -27,38 +28,28 @@ function createApp(): Application {
 
   app.use(
     cors({
-      origin: (origin, callback) => {
-        // Non-browser requests (native mobile, server-to-server) have no origin
-        if (!origin) return callback(null, true);
-
-        const isAllowed =
-          allowedOrigins.includes(origin) ||
-          /^https:\/\/([a-z0-9-]+\.)*expo\.dev$/.test(origin);
-
-        if (!isAllowed) {
-          console.warn(`[CORS] Rejected origin: ${origin}`);
-        }
-
-        callback(isAllowed ? null : new Error("Not allowed by CORS"), isAllowed);
-      },
+      origin: allowedOrigins,
       credentials: true,
-    })
+    }),
   );
   app.use(express.json({ limit: "100kb" }));
 
-  app.get("/health", (_req: Request, res: Response) => res.json({ status: "ok" }));
+  app.get("/health", (_req: Request, res: Response) =>
+    res.json({ status: "ok" }),
+  );
 
   app.use(morgan(process.env.NODE_ENV === "test" ? "tiny" : "combined"));
 
-  const apiLimiter = process.env.NODE_ENV === "test"
-    ? (_req: Request, _res: Response, next: NextFunction) => next()
-    : rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 300,
-        standardHeaders: true,
-        legacyHeaders: false,
-        message: { error: "Too many requests, please try again later" },
-      });
+  const apiLimiter =
+    process.env.NODE_ENV === "test"
+      ? (_req: Request, _res: Response, next: NextFunction) => next()
+      : rateLimit({
+          windowMs: 15 * 60 * 1000,
+          max: 300,
+          standardHeaders: true,
+          legacyHeaders: false,
+          message: { error: "Too many requests, please try again later" },
+        });
   app.use("/api/", apiLimiter);
 
   app.use("/api/auth", authRouter);
