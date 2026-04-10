@@ -48,6 +48,7 @@ app-example
 .claude/
 skills-lock.json
 server/.env
+server/.env.test
 
 ai/
 .ai-orchestrator/
