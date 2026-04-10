@@ -1,7 +1,7 @@
+import { LoadingScreen } from "@/features/common/components/loading-screen";
 import { ContactSection } from "@/features/companies/components/contact-section";
 import { NoteSection } from "@/features/companies/components/note-section";
 import { StageSection } from "@/features/companies/components/stage-section";
-import { LoadingScreen } from "@/features/common/components/loading-screen";
 import { useCompanyDetail } from "@/features/companies/hooks/useCompanyDetail";
 import { SNACKBAR_DURATION, STATUS_COLORS, iconSizes, spacing } from "@/theme";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -36,11 +36,13 @@ export default function CompanyDetailScreen() {
           headerRight: () => (
             <View style={styles.headerActions}>
               <IconButton
+                style={styles.icon}
                 icon="pencil-outline"
                 size={iconSizes.header}
                 onPress={() => router.push(`/company/${company.id}/edit`)}
               />
               <IconButton
+                style={styles.icon}
                 icon="delete-outline"
                 size={iconSizes.header}
                 onPress={d.handleDelete}
@@ -160,7 +162,13 @@ export default function CompanyDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingBottom: 40 },
-  headerActions: { flexDirection: "row", gap: 4 },
+  icon: {
+    margin: 0,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 4,
+  },
   section: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   companyName: { fontWeight: "700" },
   chipsRow: {
